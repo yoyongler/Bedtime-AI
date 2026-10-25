@@ -113,7 +113,8 @@ npm run preview
 
 ### Deploying to GitHub Pages
 
-GitHub Pages is free for public repositories. The Vite config uses a relative `base`, so the build works from a project path such as `https://<user>.github.io/<repo>/` without extra configuration, and the HTTPS URL keeps the microphone and Wake Lock APIs available.
+You may access the working site at [https://yoyongler.github.io/Bedtime-AI/](https://yoyongler.github.io/Bedtime-AI/).
+Alternatively, feel free to use the project in your own repo. The Vite config uses a relative `base`, so the build works from a project path such as `https://<user>.github.io/<repo>/` without extra configuration, and the HTTPS URL keeps the microphone and Wake Lock APIs available.
 
 A workflow at `.github/workflows/deploy.yml` builds and publishes the site on every push to `main`:
 
