@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { ArrowLeft, Mic, Square } from 'lucide-react';
-import { generateBedtimeReassurance } from '../services/gemini';
+import { describeApiError, generateBedtimeReassurance, type ReassuranceIssue } from '../services/gemini';
 import { useSpeechToText } from '../hooks/useSpeechToText';
 
 interface MindDumpScreenProps {
@@ -11,6 +11,43 @@ interface MindDumpScreenProps {
 
 type Stage = 'input' | 'fading-input' | 'quote-active' | 'quote-fading';
 
+const QUOTE_BASE_DURATION_MS = 5000;
+const QUOTE_MS_PER_CHAR = 30;
+const QUOTE_MAX_DURATION_MS = 14000;
+const QUOTE_FADE_MS = 800;
+
+const getQuoteDuration = (text: string): number => {
+  const length = text.trim().length;
+  return Math.min(
+    QUOTE_MAX_DURATION_MS,
+    Math.max(QUOTE_BASE_DURATION_MS, QUOTE_BASE_DURATION_MS + length * QUOTE_MS_PER_CHAR)
+  );
+};
+
+const formatIssue = (issue: ReassuranceIssue): string => {
+  switch (issue.kind) {
+    case 'missing-key':
+      return 'no API key saved on this site';
+    case 'empty-response': {
+      const details = [
+        issue.finishReason ? `finish: ${issue.finishReason}` : '',
+        issue.blockReason ? `blocked: ${issue.blockReason}` : '',
+      ].filter(Boolean);
+      return details.length > 0 ? `empty response (${details.join(', ')})` : 'empty response';
+    }
+    case 'api-error':
+      return issue.status
+        ? `${issue.status}: ${describeApiError(issue.status, issue.message)}`
+        : describeApiError(undefined, issue.message);
+    case 'network-error':
+      return `network: ${issue.message}`;
+    case 'timeout':
+      return 'request timed out';
+    default:
+      return 'unknown error';
+  }
+};
+
 export const MindDumpScreen: React.FC<MindDumpScreenProps> = ({
   onBack,
   onProceedToExercise,
@@ -20,8 +57,10 @@ export const MindDumpScreen: React.FC<MindDumpScreenProps> = ({
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [reassurance, setReassurance] = useState<string | null>(null);
   const [isAiGenerated, setIsAiGenerated] = useState<boolean>(true);
+  const [aiIssue, setAiIssue] = useState<ReassuranceIssue | null>(null);
   const [stage, setStage] = useState<Stage>('input');
   const [isProgressBarActive, setIsProgressBarActive] = useState<boolean>(false);
+  const isDebugMode = new URLSearchParams(window.location.search).get('debug') === '1';
 
   const textareaRef = useRef<HTMLTextAreaElement | null>(null);
   const timeoutRefs = useRef<number[]>([]);
@@ -84,10 +123,12 @@ export const MindDumpScreen: React.FC<MindDumpScreenProps> = ({
     }
 
     setIsSubmitting(true);
+    setAiIssue(null);
 
     const inputThought =
       (thoughtRef.current || thought).trim() || 'Lingering thoughts and concerns.';
     const result = await generateBedtimeReassurance(inputThought, customApiKey);
+    const quoteDurationMs = getQuoteDuration(result.text);
 
     // 1. Gently fade out the input form
     setStage('fading-input');
@@ -96,23 +137,24 @@ export const MindDumpScreen: React.FC<MindDumpScreenProps> = ({
     addTimeout(() => {
       setReassurance(result.text);
       setIsAiGenerated(result.isAiGenerated);
+      setAiIssue(result.issue ?? null);
       setStage('quote-active');
       setIsSubmitting(false);
 
-      // Trigger the 5-second countdown progress bar
+      // Start the countdown progress bar
       addTimeout(() => {
         setIsProgressBarActive(true);
       }, 50);
 
-      // 3. At 4.4 seconds of reading, gently fade out the quote
+      // 3. Near the end of the reading time, gently fade out the quote
       addTimeout(() => {
         setStage('quote-fading');
-      }, 4400);
+      }, Math.max(0, quoteDurationMs - QUOTE_FADE_MS));
 
-      // 4. At 5.2 seconds total, smoothly proceed to the breathing exercise
+      // 4. Once the reading time ends, smoothly proceed to the breathing exercise
       addTimeout(() => {
         onProceedToExercise(result.text);
-      }, 5200);
+      }, quoteDurationMs);
     }, 600);
   };
 
@@ -125,6 +167,7 @@ export const MindDumpScreen: React.FC<MindDumpScreenProps> = ({
 
   const showInput = stage === 'input' || stage === 'fading-input';
   const showQuote = stage === 'quote-active' || stage === 'quote-fading';
+  const progressDurationMs = Math.max(0, (reassurance ? getQuoteDuration(reassurance) : 0) - 50);
 
   return (
     <div className="relative min-h-screen bg-[#050505] text-zinc-200 flex flex-col justify-between px-6 py-10 max-w-lg mx-auto overflow-hidden">
@@ -244,20 +287,26 @@ export const MindDumpScreen: React.FC<MindDumpScreenProps> = ({
               </blockquote>
             </div>
 
-            {/* Subtle 5-second countdown progress bar */}
+            {/* Subtle countdown progress bar */}
             <div className="w-48 h-0.5 bg-zinc-900/80 rounded-full mx-auto overflow-hidden">
               <div
                 className="h-full bg-indigo-400/50 rounded-full transition-all ease-linear"
                 style={{
                   width: isProgressBarActive ? '0%' : '100%',
-                  transitionDuration: isProgressBarActive ? '5000ms' : '0ms',
+                  transitionDuration: isProgressBarActive ? `${progressDurationMs}ms` : '0ms',
                 }}
               />
             </div>
 
             {!isAiGenerated && (
               <p className="text-[11px] text-zinc-600">
-                Offline reassurance &middot; add a Gemini key for a personal reply
+                Offline reassurance &middot;{' '}
+                {aiIssue?.kind === 'missing-key'
+                  ? 'add a Gemini key for a personal reply'
+                  : 'AI unavailable right now'}
+                {isDebugMode && aiIssue && aiIssue.kind !== 'missing-key'
+                  ? ` (${formatIssue(aiIssue)})`
+                  : ''}
               </p>
             )}
           </div>

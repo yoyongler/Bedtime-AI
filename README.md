@@ -128,7 +128,7 @@ To deploy without Actions, run `npm run build` locally and publish the contents 
 
 ## Gemini API Key (Optional)
 
-The AI Mind Dump feature uses `gemini-3.8-flash` via the `@google/genai` SDK. Without a key, the app falls back to a built-in reassurance message.
+The AI Mind Dump feature uses `gemini-3.5-flash-lite` via the `@google/genai` SDK. Without a key, the app falls back to a built-in reassurance message.
 
 Configure the key using any of these methods (the in-app key takes precedence):
 
@@ -191,7 +191,7 @@ src/
 | Framework | React 19 + TypeScript |
 | Styling | Tailwind CSS 4 |
 | Icons | Lucide React |
-| AI | `@google/genai` (Gemini 3.8 Flash) |
+| AI | `@google/genai` (Gemini 3.5 Flash-Lite) |
 | Audio | Web Audio API (no external assets) |
 | Speech | Web Speech API (no external assets) |
 | Build | Vite 8 |
