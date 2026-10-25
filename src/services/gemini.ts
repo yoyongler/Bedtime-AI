@@ -1,4 +1,4 @@
-import { GoogleGenAI } from '@google/genai';
+import { GoogleGenAI, ThinkingLevel } from '@google/genai';
 
 const DEFAULT_FALLBACK =
   "Let go of today's burdens—you have done enough, and tomorrow will take care of itself.";
@@ -40,7 +40,7 @@ export function getApiKey(overrideKey?: string): string | null {
 }
 
 /**
- * Generates a calm, validating 1-sentence reassurance using gemini-2.0-flash via @google/genai
+ * Generates a calm, validating 1-sentence reassurance using gemini-3.8-flash via @google/genai
  */
 export async function generateBedtimeReassurance(
   thought: string,
@@ -57,7 +57,7 @@ export async function generateBedtimeReassurance(
     const ai = new GoogleGenAI({ apiKey });
 
     const response = await ai.models.generateContent({
-      model: 'gemini-2.0-flash',
+      model: 'gemini-3.8-flash',
       contents: [
         {
           role: 'user',
@@ -68,7 +68,8 @@ export async function generateBedtimeReassurance(
         systemInstruction:
           "You are a soft, reassuring bedtime assistant. Read the user's stress point and write exactly ONE sentence of calm, validating reassurance that helps them put the thought down for the night.",
         temperature: 0.7,
-        maxOutputTokens: 100,
+        maxOutputTokens: 1024,
+        thinkingConfig: { thinkingLevel: ThinkingLevel.LOW },
       },
     });
 

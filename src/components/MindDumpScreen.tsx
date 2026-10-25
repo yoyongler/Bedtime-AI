@@ -19,6 +19,7 @@ export const MindDumpScreen: React.FC<MindDumpScreenProps> = ({
   const [thought, setThought] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [reassurance, setReassurance] = useState<string | null>(null);
+  const [isAiGenerated, setIsAiGenerated] = useState<boolean>(true);
   const [stage, setStage] = useState<Stage>('input');
   const [isProgressBarActive, setIsProgressBarActive] = useState<boolean>(false);
 
@@ -94,6 +95,7 @@ export const MindDumpScreen: React.FC<MindDumpScreenProps> = ({
     // 2. After 600ms fade-out, reveal the AI reassurance quote
     addTimeout(() => {
       setReassurance(result.text);
+      setIsAiGenerated(result.isAiGenerated);
       setStage('quote-active');
       setIsSubmitting(false);
 
@@ -252,6 +254,12 @@ export const MindDumpScreen: React.FC<MindDumpScreenProps> = ({
                 }}
               />
             </div>
+
+            {!isAiGenerated && (
+              <p className="text-[11px] text-zinc-600">
+                Offline reassurance &middot; add a Gemini key for a personal reply
+              </p>
+            )}
           </div>
         )}
       </main>
