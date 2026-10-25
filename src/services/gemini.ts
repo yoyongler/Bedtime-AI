@@ -1,7 +1,6 @@
 import { GoogleGenAI } from '@google/genai';
 
 const DEFAULT_FALLBACK =
-  "That sounds like a heavy day, but you don't have to carry tomorrow's stress into tonight. Those emails can wait until you've had a chance to rest and recharge.\n" +
   "Let go of today's burdens—you have done enough, and tomorrow will take care of itself.";
 
 /**
