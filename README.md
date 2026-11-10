@@ -182,7 +182,7 @@ src/
 ├── main.tsx                   # Entry point and Audio Lab route
 └── types.ts                   # TypeScript type definitions
 ```
-
+[![Architecture diagram of yoyongler/bedtime-ai](https://gitdiagram.com/yoyongler/bedtime-ai/diagram.png)](https://gitdiagram.com/yoyongler/bedtime-ai?utm_source=readme&utm_medium=picture)
 ---
 
 ## Tech Stack
